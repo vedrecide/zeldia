@@ -67,6 +67,14 @@ class GatewayClient:
 
         if opcode == OPCodes.HELLO:
             await self._start_heartbeating(data)
+        elif opcode == OPCodes.HEARTBEAT_ACK:
+            self._runner.ack()
+
+    async def _close(self, *, code: int = 4000) -> None:
+        await self._socket.close(code=code)
 
     def login(self) -> None:
-        self._loop.run_until_complete(self._connect())
+        try:
+            self._loop.run_until_complete(self._connect())
+        except KeyboardInterrupt:
+            self._loop.run_until_complete(self._close())
