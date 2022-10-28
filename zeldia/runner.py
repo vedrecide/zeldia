@@ -1,3 +1,4 @@
+import abc
 import asyncio
 import typing
 import logging
@@ -12,7 +13,21 @@ if typing.TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class Runner:
+class RunnerTrait(abc.ABC):
+    @abc.abstractmethod
+    async def start(self, gateway: "GatewayClient") -> None:
+        ...
+
+    @abc.abstractmethod
+    def payload(self) -> dict[str, float]:
+        ...
+
+    @abc.abstractmethod
+    def ack(self) -> None:
+        ...
+
+
+class Runner(RunnerTrait):
     def __init__(self) -> None:
         self.counter = 0
         self._ack: bool = True
