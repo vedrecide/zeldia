@@ -9,12 +9,20 @@ from zeldia.enums.opcodes import OPCodes
 from zeldia.runner import Runner
 
 
+API_VERSION = 10
+GATEWAY_URL_1 = f"wss://gateway.discord.gg/?v={API_VERSION}&encoding=json"
+GATEWAY_URL_2 = f"wss://gateway.discord.gg/?v={API_VERSION}&encoding=json&compress=true"
+
+
 class GatewayClient:
-    def __init__(self, token: str, intents: int, **options) -> None:
+    def __init__(
+        self, token: str, intents: int, zlib_compression: bool, **options
+    ) -> None:
         # Public fields
         self.session = aiohttp.ClientSession()
         self.token = token
         self.intents = intents
+        self.compress = zlib_compression
 
         # Private fields
         self._socket: aiohttp.ClientWebSocketResponse = None
@@ -41,12 +49,14 @@ class GatewayClient:
 
     async def _connect(self):
         async with self.session.ws_connect(
-            "wss://gateway.discord.gg/?v=10&encoding=json"
+            GATEWAY_URL_2 if self.compress else GATEWAY_URL_1
         ) as ws:
             self._socket = ws
             async for msg in self._socket:
                 if msg.type == aiohttp.WSMsgType.TEXT:
-                    await self._handle_payload(json.loads(msg.data))
+                    await self._handle_payload(
+                        msg.data if self.session else json.loads(msg.data)
+                    )
 
     async def _start_heartbeating(self, data: dict[str, t.Any]) -> None:
         await self._socket.send_json(self._identify_payload)
@@ -62,8 +72,8 @@ class GatewayClient:
             payload = self.__decompressor.decompress(self._buffer).decode("UTF-8")
             self._buffer = bytearray()
 
-        opcode = payload.get("op")
-        data = payload.get("d")
+        opcode = json.loads(payload).get("op") if self.compress else payload.get("op")
+        data = json.loads(payload).get("d") if self.compress else payload.get("d")
 
         if opcode == OPCodes.HELLO:
             await self._start_heartbeating(data)
