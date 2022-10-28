@@ -22,8 +22,8 @@ class GatewayClient:
     def __init__(
         self,
         token: str,
-        intents: t.Union[t.SupportsInt, "Intents"],
-        zlib_compression: bool,
+        intents: t.Optional[t.Union[t.SupportsInt, "Intents"]] = 0,
+        zlib_compression: t.Optional[bool] = False,
         **options,
     ) -> None:
         # Public fields
@@ -63,7 +63,7 @@ class GatewayClient:
             async for msg in self._socket:
                 if msg.type == aiohttp.WSMsgType.TEXT:
                     await self._handle_payload(
-                        msg.data if self.session else json.loads(msg.data)
+                        msg.data if self.compress else json.loads(msg.data)
                     )
 
     async def _start_heartbeating(self, data: dict[str, t.Any]) -> None:
@@ -80,8 +80,10 @@ class GatewayClient:
             payload = self.__decompressor.decompress(self._buffer).decode("UTF-8")
             self._buffer = bytearray()
 
-        opcode = json.loads(payload).get("op") if self.compress else payload.get("op")
-        data = json.loads(payload).get("d") if self.compress else payload.get("d")
+        payload = json.loads(payload)
+
+        opcode = payload.get("op")
+        data = payload.get("d")
 
         if opcode == OPCodes.HELLO:
             await self._start_heartbeating(data)
