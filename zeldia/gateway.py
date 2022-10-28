@@ -46,7 +46,7 @@ class GatewayClient:
             "op": OPCodes.IDENTIFY,
             "d": {
                 "token": self.token,
-                "intents": self.intents,
+                "intents": self.intents.value,
                 "properties": {
                     "os": sys.platform,
                     "browser": "zeldia",
