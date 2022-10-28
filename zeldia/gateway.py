@@ -71,24 +71,24 @@ class GatewayClient:
         self._interval = data["heartbeat_interval"] / 1000
         self._loop.create_task(self._runner.start(self))
 
-    async def _handle_payload(self, payload: t.Union[dict[str, t.Any], bytes]) -> None:
-        if isinstance(payload, bytes):
-            self._buffer.extend(payload)
-            if len(payload) < 4 or payload[-4:] != b"\x00\x00\xff\xff":
+    async def _handle_payload(self, raw: t.Union[str, bytes]) -> None:
+        if isinstance(raw, bytes):
+            self._buffer.extend(raw)
+            if len(raw) < 4 or raw[-4:] != b"\x00\x00\xff\xff":
                 return
 
-            payload = self.__decompressor.decompress(self._buffer).decode("UTF-8")
+            raw = self.__decompressor.decompress(self._buffer).decode("UTF-8")
             self._buffer = bytearray()
 
-        payload = json.loads(payload)
+        payload = json.loads(raw)
 
         opcode = payload.get("op")
         data = payload.get("d")
 
+        if opcode == OPCodes.HEARTBEAT_ACK:
+            self._runner.ack()
         if opcode == OPCodes.HELLO:
             await self._start_heartbeating(data)
-        elif opcode == OPCodes.HEARTBEAT_ACK:
-            self._runner.ack()
 
     async def _close(self, *, code: int = 4000) -> None:
         await self._socket.close(code=code)
