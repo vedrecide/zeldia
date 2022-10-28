@@ -31,6 +31,7 @@ class GatewayClient:
         self.token = token
         self.intents = intents
         self.compress = zlib_compression
+        self.events: dict[str, t.Callable[[t.Any], t.Awaitable[None]]] = {}
 
         # Private fields
         self._socket: aiohttp.ClientWebSocketResponse = None
@@ -39,6 +40,20 @@ class GatewayClient:
         self._runner = Runner()
         self._buffer = bytearray()
         self._decompressor = zlib.decompressobj()
+
+    def listen(self, event_name: str):
+        def inner(function):
+            self.events[event_name] = self.events.get(event_name, []) + [function]
+            return function
+
+        return inner
+
+    async def emit(self, event_name, *args, **kwargs):
+        for function in self.events.get(event_name, []):
+            await function(*args, **kwargs)
+
+    def off(self, event_name, function):
+        self.events.get(event_name, []).remove(function)
 
     @property
     def _identify_payload(self) -> dict[str, t.Any]:
@@ -66,9 +81,9 @@ class GatewayClient:
                         msg.data if self.compress else json.loads(msg.data)
                     )
 
-    async def _start_heartbeating(self, data: dict[str, t.Any]) -> None:
+    async def _start_heartbeating(self, payload: dict[str, t.Any]) -> None:
         await self._socket.send_json(self._identify_payload)
-        self._interval = data["heartbeat_interval"] / 1000
+        self._interval = payload["d"]["heartbeat_interval"] / 1000
         self._loop.create_task(self._runner.start(self))
 
     async def _handle_payload(self, raw: t.Union[str, bytes]) -> None:
@@ -83,12 +98,16 @@ class GatewayClient:
         payload = json.loads(raw)
 
         opcode = payload.get("op")
-        data = payload.get("d")
 
         if opcode == OPCodes.HEARTBEAT_ACK:
             self._runner.ack()
-        if opcode == OPCodes.HELLO:
-            await self._start_heartbeating(data)
+        elif opcode == OPCodes.HELLO:
+            await self._start_heartbeating(payload)
+        elif opcode == OPCodes.DISPATCH:
+            event = payload.get("t")
+            data = payload.get("d")
+
+            await self.emit(event.lower(), data)
 
     async def _close(self, *, code: int = 4000) -> None:
         await self._socket.close(code=code)
