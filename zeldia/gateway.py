@@ -9,6 +9,10 @@ from zeldia.enums.opcodes import OPCodes
 from zeldia.runner import Runner
 
 
+if t.TYPE_CHECKING:
+    from zeldia.flags.intents import Intents
+
+
 API_VERSION = 10
 GATEWAY_URL_1 = f"wss://gateway.discord.gg/?v={API_VERSION}&encoding=json"
 GATEWAY_URL_2 = f"wss://gateway.discord.gg/?v={API_VERSION}&encoding=json&compress=true"
@@ -16,7 +20,11 @@ GATEWAY_URL_2 = f"wss://gateway.discord.gg/?v={API_VERSION}&encoding=json&compre
 
 class GatewayClient:
     def __init__(
-        self, token: str, intents: int, zlib_compression: bool, **options
+        self,
+        token: str,
+        intents: t.Union[t.SupportsInt, "Intents"],
+        zlib_compression: bool,
+        **options,
     ) -> None:
         # Public fields
         self.session = aiohttp.ClientSession()
