@@ -1,41 +1,49 @@
-import aiohttp
-import json
-import typing as t
+from __future__ import annotations
+
 import asyncio
+import json
 import sys
 import zlib
+from typing import Any, Awaitable, Callable, SupportsInt, TYPE_CHECKING
+
+import aiohttp
 
 from zeldia.enums.opcodes import OPCodes
 from zeldia.runner import Runner
 
-
-if t.TYPE_CHECKING:
+if TYPE_CHECKING:
     from zeldia.flags.intents import Intents
 
 
 API_VERSION = 10
-GATEWAY_URL_1 = f"wss://gateway.discord.gg/?v={API_VERSION}&encoding=json"
-GATEWAY_URL_2 = f"wss://gateway.discord.gg/?v={API_VERSION}&encoding=json&compress=true"
+
+GATEWAY_URL_MAP: dict[bool, str] = {
+    True: f"wss://gateway.discord.gg/?v={API_VERSION}&encoding=json&compress=true",
+    False: f"wss://gateway.discord.gg/?v={API_VERSION}&encoding=json",
+}
 
 
 class GatewayClient:
+    events: dict[str, list[Callable[..., Awaitable]]]
+
+    _socket: aiohttp.ClientWebSocketResponse
+    _interval: float | None
+
     def __init__(
         self,
         token: str,
-        intents: t.Optional[t.Union[t.SupportsInt, "Intents"]] = 0,
-        zlib_compression: t.Optional[bool] = False,
+        intents: SupportsInt | "Intents" | None = 0,
+        zlib_compression: bool = False,
         **options,
     ) -> None:
-        # Public fields
         self.session = aiohttp.ClientSession()
         self.token = token
         self.intents = intents
         self.compress = zlib_compression
-        self.events: dict[str, t.Callable[[t.Any], t.Awaitable[None]]] = {}
+        self.events = {}
 
-        # Private fields
-        self._socket: aiohttp.ClientWebSocketResponse = None
-        self._interval: float = None
+        self._socket = None
+        self._interval = None
         self._loop = options.pop("loop", asyncio.get_event_loop())
         self._runner = Runner()
         self._buffer = bytearray()
@@ -56,11 +64,12 @@ class GatewayClient:
         self.events.get(event_name, []).remove(function)
 
     @property
-    def _identify_payload(self) -> dict[str, t.Any]:
+    def _identify_payload(self) -> dict[str, Any]:
         return {
             "op": OPCodes.IDENTIFY,
             "d": {
                 "token": self.token,
+                # type: ignore fix this
                 "intents": self.intents.value,
                 "properties": {
                     "os": sys.platform,
@@ -71,9 +80,7 @@ class GatewayClient:
         }
 
     async def _connect(self):
-        async with self.session.ws_connect(
-            GATEWAY_URL_2 if self.compress else GATEWAY_URL_1
-        ) as ws:
+        async with self.session.ws_connect(GATEWAY_URL_MAP[self.compress]) as ws:
             self._socket = ws
             async for msg in self._socket:
                 if msg.type == aiohttp.WSMsgType.TEXT:
@@ -81,18 +88,19 @@ class GatewayClient:
                         msg.data if self.compress else json.loads(msg.data)
                     )
 
-    async def _start_heartbeating(self, payload: dict[str, t.Any]) -> None:
+    async def _start_heartbeating(self, payload: dict[str, Any]) -> None:
         await self._socket.send_json(self._identify_payload)
+
         self._interval = payload["d"]["heartbeat_interval"] / 1000
         self._loop.create_task(self._runner.start(self))
 
-    async def _handle_payload(self, raw: t.Union[str, bytes]) -> None:
+    async def _handle_payload(self, raw: str | bytes) -> None:
         if isinstance(raw, bytes):
             self._buffer.extend(raw)
             if len(raw) < 4 or raw[-4:] != b"\x00\x00\xff\xff":
                 return
 
-            raw = self.__decompressor.decompress(self._buffer).decode("UTF-8")
+            raw = self._decompressor.decompress(self._buffer).decode("UTF-8")
             self._buffer = bytearray()
 
         payload = json.loads(raw)

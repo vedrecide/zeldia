@@ -1,10 +1,9 @@
 import abc
 import asyncio
-import typing
 import logging
+import typing
 
 from zeldia.enums.opcodes import OPCodes
-
 
 if typing.TYPE_CHECKING:
     from zeldia.gateway import GatewayClient
