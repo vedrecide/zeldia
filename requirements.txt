@@ -1,9 +1,9 @@
-aiohttp @ file:///home/rayyan/.cache/pypoetry/artifacts/cf/2f/76/be298ef548eac764baf1400e1690c9cc6a64ad744d5b318cc1ec52efb8/aiohttp-3.8.3-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
-aiosignal @ file:///home/rayyan/.cache/pypoetry/artifacts/d3/d7/92/f7aa28b137b4b00e62270f58330cedde299917a71a3c00ee64913aa3c2/aiosignal-1.2.0-py3-none-any.whl
-async-timeout @ file:///home/rayyan/.cache/pypoetry/artifacts/62/ff/30/bd0ec891880d93bf40cf6e7c53ab08dd9eb6af45fa532c030731e6eed0/async_timeout-4.0.2-py3-none-any.whl
-attrs @ file:///home/rayyan/.cache/pypoetry/artifacts/62/f0/59/eeccc31c495183d61944cc7da7adc89fecd84f334e12642effe639ec20/attrs-22.1.0-py2.py3-none-any.whl
-charset-normalizer @ file:///home/rayyan/.cache/pypoetry/artifacts/3e/99/e2/360c4ab5408a60c2f59e1f90b0e788ec410f1ebc0921724075288f9af9/charset_normalizer-2.1.1-py3-none-any.whl
-frozenlist @ file:///home/rayyan/.cache/pypoetry/artifacts/11/a5/a9/f36d061e06bf205d08572b6ff65419c700983d3c56ee974b4dbe3ad4b6/frozenlist-1.3.1-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl
-idna @ file:///home/rayyan/.cache/pypoetry/artifacts/a9/f2/65/df91fc5f4e7bf1bb8b8d4b9da51737a5fe4b70fe4f5034466ec4335ed6/idna-3.4-py3-none-any.whl
-multidict @ file:///home/rayyan/.cache/pypoetry/artifacts/12/d0/ef/0b7b9499611ab1817c3e84fb92c039a4fb5ac1d0397a3b86f4c5283108/multidict-6.0.2-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
-yarl @ file:///home/rayyan/.cache/pypoetry/artifacts/cf/b9/00/7a368ef5cf088c2e268df13556de15c4ddb35f1677ea5b6ea489408e23/yarl-1.8.1-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+aiohttp
+aiosignal
+async-timeout
+attrs
+charset-normalizer
+frozenlist
+idna
+multidict
+yarl
