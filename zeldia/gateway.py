@@ -4,7 +4,8 @@ import asyncio
 import json
 import sys
 import zlib
-from typing import Any, Awaitable, Callable, SupportsInt, TYPE_CHECKING
+from collections import defaultdict
+from typing import Any, Optional, Awaitable, Callable, SupportsInt, TYPE_CHECKING
 
 import aiohttp
 
@@ -22,9 +23,11 @@ GATEWAY_URL_MAP: dict[bool, str] = {
     False: f"wss://gateway.discord.gg/?v={API_VERSION}&encoding=json",
 }
 
+EventCallbackT = Callable[..., Awaitable[None]]
+
 
 class GatewayClient:
-    events: dict[str, list[Callable[..., Awaitable]]]
+    events: dict[str, EventCallbackT]
 
     _socket: aiohttp.ClientWebSocketResponse
     _interval: float | None
@@ -40,7 +43,7 @@ class GatewayClient:
         self.token = token
         self.intents = intents
         self.compress = zlib_compression
-        self.events = {}
+        self.events = defaultdict(list)
 
         self._socket = None
         self._interval = None
@@ -49,19 +52,36 @@ class GatewayClient:
         self._buffer = bytearray()
         self._decompressor = zlib.decompressobj()
 
-    def listen(self, event_name: str):
-        def inner(function):
-            self.events[event_name] = self.events.get(event_name, []) + [function]
-            return function
+    def on(self, event: str) -> Callable[[EventCallbackT], EventCallbackT]:
+        def register_handler(handler: EventCallbackT) -> EventCallbackT:
+            self.events[event].append(handler)
 
-        return inner
+            return handler
 
-    async def emit(self, event_name, *args, **kwargs):
-        for function in self.events.get(event_name, []):
-            await function(*args, **kwargs)
+        return register_handler
 
-    def off(self, event_name, function):
-        self.events.get(event_name, []).remove(function)
+    def once(self, event: str) -> Callable[[EventCallbackT], EventCallbackT]:
+        def register_handler(handler: EventCallbackT) -> EventCallbackT:
+            async def wrapper(*args, **kwargs) -> None:
+                await handler(*args, **kwargs)
+
+                self.off(event, wrapper)
+
+            self.events[event].append(wrapper)
+
+            return handler
+
+        return register_handler
+
+    def off(self, event: str, handler: Optional[EventCallbackT] = None) -> None:
+        if handler is None:
+            self.events[event] = []
+        else:
+            self.events[event].remove(handler)
+
+    async def emit(self, event: str, *args, **kwargs) -> None:
+        for handler in self.events[event]:
+            await handler(*args, **kwargs)
 
     @property
     def _identify_payload(self) -> dict[str, Any]:
@@ -79,7 +99,7 @@ class GatewayClient:
             },
         }
 
-    async def _connect(self):
+    async def connect(self):
         async with self.session.ws_connect(GATEWAY_URL_MAP[self.compress]) as ws:
             self._socket = ws
             async for msg in self._socket:
