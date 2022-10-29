@@ -137,11 +137,11 @@ class GatewayClient:
 
             await self.emit(event.lower(), data)
 
-    async def _close(self, *, code: int = 4000) -> None:
+    async def close(self, *, code: int = 4000) -> None:
         await self._socket.close(code=code)
 
     def login(self) -> None:
         try:
-            self._loop.run_until_complete(self._connect())
+            self._loop.run_until_complete(self.connect())
         except KeyboardInterrupt:
-            self._loop.run_until_complete(self._close())
+            self._loop.run_until_complete(self.close())
