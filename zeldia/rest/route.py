@@ -4,7 +4,7 @@ import typing as t
 
 
 class Route:
-    BASE_URL = f"https://discord.com/api/v10"
+    BASE_URL = "https://discord.com/api/v10"
 
     def __init__(
         self, method: t.Literal["GET", "POST", "PUT", "DELETE", "PATCH"], path: str
