@@ -5,28 +5,52 @@ import json
 import sys
 import zlib
 from collections import defaultdict
-from typing import Any, Optional, Awaitable, Callable, SupportsInt, TYPE_CHECKING
+from typing import (
+    Any,
+    Optional,
+    Awaitable,
+    Callable,
+    SupportsInt,
+    TYPE_CHECKING,
+    Sequence,
+)
 
 import aiohttp
 
 from zeldia.enums.opcodes import OPCodes
+from zeldia.events import Events
 from zeldia.runner import Runner
+from zeldia.rest.http import HTTPClient
 
 if TYPE_CHECKING:
     from zeldia.flags.intents import Intents
 
 
-API_VERSION = 10
-
 GATEWAY_URL_MAP: dict[bool, str] = {
-    True: f"wss://gateway.discord.gg/?v={API_VERSION}&encoding=json&compress=true",
-    False: f"wss://gateway.discord.gg/?v={API_VERSION}&encoding=json",
+    True: "wss://gateway.discord.gg/?v=10&encoding=json&compress=true",
+    False: "wss://gateway.discord.gg/?v=10&encoding=json",
 }
 
 EventCallbackT = Callable[..., Awaitable[None]]
 
 
 class GatewayClient:
+
+    __slots__: Sequence[str] = (
+        "session",
+        "token",
+        "intents",
+        "compress",
+        "events",
+        "http",
+        "_socket",
+        "_interval",
+        "_loop",
+        "_runner",
+        "_buffer",
+        "_decompressor",
+    )
+
     events: dict[str, EventCallbackT]
 
     _socket: aiohttp.ClientWebSocketResponse
@@ -37,6 +61,7 @@ class GatewayClient:
         token: str,
         intents: SupportsInt | "Intents" | None = 0,
         zlib_compression: bool = False,
+        http_client: HTTPClient = None,
         **options,
     ) -> None:
         self.session = aiohttp.ClientSession()
@@ -44,6 +69,7 @@ class GatewayClient:
         self.intents = intents
         self.compress = zlib_compression
         self.events = defaultdict(list)
+        self.http = HTTPClient(self.token) if not http_client else http_client
 
         self._socket = None
         self._interval = None
@@ -52,22 +78,26 @@ class GatewayClient:
         self._buffer = bytearray()
         self._decompressor = zlib.decompressobj()
 
-    def on(self, event: str) -> Callable[[EventCallbackT], EventCallbackT]:
+    def on(self, event: str | Events) -> Callable[[EventCallbackT], EventCallbackT]:
         def register_handler(handler: EventCallbackT) -> EventCallbackT:
-            self.events[event].append(handler)
+            self.events[event.value if isinstance(event, Events) else event].append(
+                handler
+            )
 
             return handler
 
         return register_handler
 
-    def once(self, event: str) -> Callable[[EventCallbackT], EventCallbackT]:
+    def once(self, event: str | Events) -> Callable[[EventCallbackT], EventCallbackT]:
         def register_handler(handler: EventCallbackT) -> EventCallbackT:
             async def wrapper(*args, **kwargs) -> None:
                 await handler(*args, **kwargs)
 
-                self.off(event, wrapper)
+                self.off(event.value if isinstance(event, Events) else event, wrapper)
 
-            self.events[event].append(wrapper)
+            self.events[event.value if isinstance(event, Events) else event].append(
+                wrapper
+            )
 
             return handler
 
