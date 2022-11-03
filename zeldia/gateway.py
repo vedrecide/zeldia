@@ -21,6 +21,8 @@ from zeldia.enums.opcodes import OPCodes
 from zeldia.events import Events
 from zeldia.runner import Runner
 from zeldia.rest.http import HTTPClient
+from zeldia.converters import payload_to_message
+from zeldia.models.message import Message
 
 if TYPE_CHECKING:
     from zeldia.flags.intents import Intents
@@ -143,6 +145,10 @@ class GatewayClient:
 
         self._interval = payload["d"]["heartbeat_interval"] / 1000
         self._loop.create_task(self._runner.start(self))
+    
+    def convert_to_model(self, event_name: str, payload: dict[str, Any]) -> Message:
+        if event_name == "MESSAGE_CREATE":
+            return payload_to_message(payload)
 
     async def _handle_payload(self, raw: str | bytes) -> None:
         if isinstance(raw, bytes):
@@ -165,7 +171,7 @@ class GatewayClient:
             event = payload.get("t")
             data = payload.get("d")
 
-            await self.emit(event.lower(), data)
+            await self.emit(event.lower(), self.convert_to_model(event, data))
 
     async def close(self, *, code: int = 4000) -> None:
         await self._socket.close(code=code)
