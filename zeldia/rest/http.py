@@ -13,7 +13,7 @@ class HTTPClient:
 
     __slots__: Sequence[str] = ("_session", "_lock", "token")
 
-    USER_AGENT = "zeldia - A minimal Discord API wrapper in Python"
+    USER_AGENT = "DiscordBot (https://github.com/vedrecide/zeldia, 0.0.1)"
 
     def __init__(
         self, token: str, session: aiohttp.ClientSession = aiohttp.ClientSession()
