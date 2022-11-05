@@ -128,7 +128,7 @@ class Gateway:
             event = payload.get("t")
             data = payload.get("d")
 
-            await self.emitter(event.lower(), self.convert_to_model(event, data))
+            await self.emitter(event.upper(), self.convert_to_model(event, data))
 
     async def close(self, *, code: int = 4000):
         await self._socket.close(code=code)
