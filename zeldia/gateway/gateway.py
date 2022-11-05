@@ -122,9 +122,9 @@ class Gateway:
         if opcode == OPCodes.HEARTBEAT_ACK:
             self._latency = time.perf_counter() - self._runner.last_heartbeat
             self._runner.ack()
-        elif opcode == OPCodes.HELLO:
+        if opcode == OPCodes.HELLO:
             await self.start_heartbeating(payload)
-        elif opcode == OPCodes.DISPATCH:
+        if opcode == OPCodes.DISPATCH:
             event = payload.get("t")
             data = payload.get("d")
 
