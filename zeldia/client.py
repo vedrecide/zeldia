@@ -58,7 +58,7 @@ class GatewayClient:
             intents=intents,
             session=aiohttp.ClientSession() if not session else session,
             compress=zlib_compression,
-            emitter=self.emit
+            emitter=self.emit,
         )
         self.http = HTTPClient(token) if not http_client else http_client
 

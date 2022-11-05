@@ -16,12 +16,13 @@ from zeldia.converters import payload_to_message
 
 if TYPE_CHECKING:
     from zeldia.models.message import Message
-    
+
 
 GATEWAY_URL_MAP: dict[bool, str] = {
     True: "wss://gateway.discord.gg/?v=10&encoding=json&compress=true",
     False: "wss://gateway.discord.gg/?v=10&encoding=json",
 }
+
 
 class Gateway:
 
