@@ -3,18 +3,23 @@ from __future__ import annotations
 import attrs
 import datetime
 
-from zeldia.models.user import User
-from zeldia.models.thread import ThreadMetadata, ThreadMember
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from zeldia.models.user import User
+    from zeldia.models.thread import ThreadMetadata, ThreadMember
+    from zeldia.models.snowflake import Snowflake
 
 
 @attrs.define(kw_only=True, slots=True, repr=True)
 class Overwrite:
-    id: int  # TODO: Change this to Snowflake
+    id: Snowflake
     type: int
     allow: str
     deny: str
 
 
+# Have to reimplement this into different type of channels...
 @attrs.define(kw_only=True, slots=True, repr=True)
 class Channel:
     id: int  # TODO: Change this to Snowflake
