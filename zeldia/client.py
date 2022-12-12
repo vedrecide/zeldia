@@ -15,7 +15,7 @@ import aiohttp
 
 from zeldia.events import Events
 from zeldia.gateway.gateway import Gateway
-from zeldia.rest.http import HTTPClient
+from zeldia.rest.rest import RESTClient
 
 if TYPE_CHECKING:
     from zeldia.flags.intents import Intents
@@ -49,7 +49,7 @@ class GatewayClient:
         intents: SupportsInt | "Intents" | None = 0,
         session: aiohttp.ClientSession = None,
         zlib_compression: bool = False,
-        http_client: HTTPClient = None,
+        http_client: RESTClient = None,
         **options,
     ) -> None:
         self.events = defaultdict(list)
@@ -60,7 +60,7 @@ class GatewayClient:
             compress=zlib_compression,
             emitter=self.emit,
         )
-        self.http = HTTPClient(token) if not http_client else http_client
+        self.http = RESTClient(token) if not http_client else http_client
 
         self._loop = options.pop("loop", asyncio.get_event_loop())
 

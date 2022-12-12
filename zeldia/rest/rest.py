@@ -9,7 +9,7 @@ from zeldia.rest.route import Route
 from zeldia.exceptions import InvalidRequest, MissingPermission
 
 
-class HTTPClient:
+class RESTClient:
 
     __slots__: Sequence[str] = ("_session", "_lock", "token")
 
